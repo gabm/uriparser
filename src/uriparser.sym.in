@@ -1,0 +1,7 @@
+{
+	global:
+@URIPARSERA_EXPORTS@
+@URIPARSERW_EXPORTS@
+	local:
+		*;
+};
