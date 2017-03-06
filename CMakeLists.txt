@@ -34,42 +34,10 @@ IF (DISABLE_WCHAR_T)
 	ADD_DEFINITIONS (-DURI_NO_UNICODE)
 ENDIF (DISABLE_WCHAR_T)
 
-FILE (READ src/uriparser.exports URIPARSER_EXPORTS)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-IF (UNIX)
-	IF (NOT DISABLE_CHAR)
-		STRING (REGEX REPLACE "([^\n]+)\n" "\t\t\\1A;\n"
-			URIPARSERA_EXPORTS ${URIPARSER_EXPORTS})
-	ENDIF (NOT DISABLE_CHAR)
-
-	IF (NOT DISABLE_WCHAR_T)
-		STRING (REGEX REPLACE "([^\n]+)\n" " \t\t\\1W;\n"
-			URIPARSERW_EXPORTS ${URIPARSER_EXPORTS})
-	ENDIF (NOT DISABLE_WCHAR_T)
-
-	CONFIGURE_FILE (src/uriparser.sym.in src/uriparser.sym)
-	SET (uriparser_DEF src/uriparser.def)
-ELSEIF (WIN32)
-	IF (NOT DISABLE_CHAR)
-		STRING (REGEX REPLACE "([^\n]+)\n" "\t\\1A\n"
-			URIPARSERA_EXPORTS ${URIPARSER_EXPORTS})
-	ENDIF (NOT DISABLE_CHAR)
-
-	IF (NOT DISABLE_WCHAR_T)
-		STRING (REGEX REPLACE "([^\n]+)\n" "\t\\1W\n"
-			URIPARSERW_EXPORTS ${URIPARSER_EXPORTS})
-	ENDIF (NOT DISABLE_WCHAR_T)
-
-	CONFIGURE_FILE (src/uriparser.def.in src/uriparser.def)
-	SET (uriparser_DEF src/uriparser.def)
-ENDIF (UNIX)
-
-ADD_LIBRARY (uriparser SHARED ${uriparser_Source_Files} ${uriparser_DEF})
+ADD_LIBRARY (uriparser SHARED ${uriparser_Source_Files})
 target_include_directories(uriparser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-IF (UNIX)
-	SET_TARGET_PROPERTIES (uriparser PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_BINARY_DIR}/src/uriparser.sym")
-ENDIF (UNIX)
 
 INSTALL (TARGETS uriparser
 	RUNTIME DESTINATION bin
