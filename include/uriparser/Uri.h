@@ -2,7 +2,7 @@
  * uriparser - RFC 3986 URI parsing library
  *
  * Copyright (C) 2007, Weijia Song <songweijia@gmail.com>
- * Copyright (C) 2007, Sebastian Pipping <webmaster@hartwork.org>
+ * Copyright (C) 2007, Sebastian Pipping <sebastian@pipping.org>
  * All rights reserved.
  *
  * Redistribution  and use in source and binary forms, with or without
@@ -347,12 +347,33 @@ const URI_CHAR * URI_FUNC(UnescapeInPlace)(URI_CHAR * inout);
  * @param absoluteBase     <b>IN</b>: Base %URI to apply
  * @return                 Error code or 0 on success
  *
- * @see uriRemoveBaseUriA
+ * @see uriRemoveBaseUriA, uriAddBaseUriExA
  * @since 0.4.0
  */
 int URI_FUNC(AddBaseUri)(URI_TYPE(Uri) * absoluteDest,
 		const URI_TYPE(Uri) * relativeSource,
 		const URI_TYPE(Uri) * absoluteBase);
+
+
+
+/**
+ * Performs reference resolution as described in
+ * <a href="http://tools.ietf.org/html/rfc3986#section-5.2.2">section 5.2.2 of RFC 3986</a>.
+ * NOTE: On success you have to call uriFreeUriMembersA on \p absoluteDest manually later.
+ *
+ * @param absoluteDest     <b>OUT</b>: Result %URI
+ * @param relativeSource   <b>IN</b>: Reference to resolve
+ * @param absoluteBase     <b>IN</b>: Base %URI to apply
+ * @param options          <b>IN</b>: Configuration to apply
+ * @return                 Error code or 0 on success
+ *
+ * @see uriRemoveBaseUriA, uriAddBaseUriA
+ * @since 0.8.1
+ */
+int URI_FUNC(AddBaseUriEx)(URI_TYPE(Uri) * absoluteDest,
+		const URI_TYPE(Uri) * relativeSource,
+		const URI_TYPE(Uri) * absoluteBase,
+		UriResolutionOptions options);
 
 
 
@@ -371,7 +392,7 @@ int URI_FUNC(AddBaseUri)(URI_TYPE(Uri) * absoluteDest,
  * @param domainRootMode   <b>IN</b>: Create %URI with path relative to domain root
  * @return                 Error code or 0 on success
  *
- * @see uriAddBaseUriA
+ * @see uriAddBaseUriA, uriAddBaseUriExA
  * @since 0.5.2
  */
 int URI_FUNC(RemoveBaseUri)(URI_TYPE(Uri) * dest,

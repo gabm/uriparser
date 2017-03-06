@@ -2,7 +2,7 @@
 # To use with mingw32-make.exe while running in cmd.exe
 #
 # Copyright (C) 2008, Michael Anthony Puls II <shadow2531@gmail.com>
-# Copyright (C) 2008, Sebastian Pipping <webmaster@hartwork.org>
+# Copyright (C) 2008, Sebastian Pipping <sebastian@pipping.org>
 # All rights reserved.
 #
 # Redistribution  and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ CFLAGS = -Wall -Wextra -O3 -s
 
 TEST_DIR = ../../test
 CPP_TEST_DIR = ../CppTest
-LIB_DIR = ../../lib
+LIB_DIR = ../../src
 INCLUDE_DIR = ../../include
 WIN32_DIR = ..
 CC = gcc
@@ -54,6 +54,8 @@ TEST_OBJECTS := $(patsubst %.cpp,%.o,$(wildcard $(CPP_TEST_DIR)/*.cpp)) \
 LIBRARY = $(WIN32_DIR)/liburiparser.a
 TEST_SUITE = $(WIN32_DIR)/test.exe
 
+all: $(LIBRARY)
+
 $(LIBRARY): $(URIPARSER_OBJECTS)
 	ar rcs $(LIBRARY) $(URIPARSER_OBJECTS)
 
@@ -65,13 +67,17 @@ $(TEST_SUITE): $(LIBRARY) $(TEST_OBJECTS)
 		-L$(WIN32_DIR) -luriparser -o $(TEST_SUITE)
 
 $(TEST_OBJECTS): %.o : %.cpp
-	$(CXX) $(CFLAGS) -I$(INCLUDE_DIR) -c "$<" -o "$@" 
-    
-all: $(LIBRARY)
+	$(CXX) $(CFLAGS) -I$(INCLUDE_DIR) -c "$<" -o "$@"
 
 clean:
 	del $(call dos,$(URIPARSER_OBJECTS)) $(call dos,$(LIBRARY)) \
 		$(call dos,$(TEST_OBJECTS)) $(call dos,$(TEST_SUITE))
 
+clean-unix:
+	$(RM) $(URIPARSER_OBJECTS) $(LIBRARY) \
+		$(TEST_OBJECTS) $(TEST_SUITE)
+
 check: $(TEST_SUITE)
 	$(TEST_SUITE)
+
+.PHONY: all check clean clean-unix

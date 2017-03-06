@@ -2,7 +2,7 @@
  * uriparser - RFC 3986 URI parsing library
  *
  * Copyright (C) 2007, Weijia Song <songweijia@gmail.com>
- * Copyright (C) 2007, Sebastian Pipping <webmaster@hartwork.org>
+ * Copyright (C) 2007, Sebastian Pipping <sebastian@pipping.org>
  * All rights reserved.
  *
  * Redistribution  and use in source and binary forms, with or without
@@ -76,6 +76,42 @@
 
 void URI_FUNC(ResetUri)(URI_TYPE(Uri) * uri) {
 	memset(uri, 0, sizeof(URI_TYPE(Uri)));
+}
+
+
+
+/* Compares two text ranges for equal text content */
+int URI_FUNC(CompareRange)(
+		const URI_TYPE(TextRange) * a,
+		const URI_TYPE(TextRange) * b) {
+	int diff;
+
+	/* NOTE: Both NULL means equal! */
+	if ((a == NULL) || (b == NULL)) {
+		return ((a == NULL) ? 0 : 1) - ((b == NULL) ? 0 : 1);
+	}
+
+	/* NOTE: Both NULL means equal! */
+	if ((a->first == NULL) || (b->first == NULL)) {
+		return ((a->first == NULL) ? 0 : 1) - ((b->first == NULL) ? 0 : 1);
+	}
+
+	diff = ((int)(a->afterLast - a->first) - (int)(b->afterLast - b->first));
+	if (diff > 0) {
+		return 1;
+	} else if (diff < 0) {
+		return -1;
+	}
+
+	diff = URI_STRNCMP(a->first, b->first, (a->afterLast - a->first));
+
+	if (diff > 0) {
+		return 1;
+	} else if (diff < 0) {
+		return -1;
+	}
+
+	return diff;
 }
 
 

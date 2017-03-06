@@ -2,7 +2,7 @@
  * uriparser - RFC 3986 URI parsing library
  *
  * Copyright (C) 2007, Weijia Song <songweijia@gmail.com>
- * Copyright (C) 2007, Sebastian Pipping <webmaster@hartwork.org>
+ * Copyright (C) 2007, Sebastian Pipping <sebastian@pipping.org>
  * All rights reserved.
  *
  * Redistribution  and use in source and binary forms, with or without
@@ -77,6 +77,10 @@ extern const URI_CHAR * const URI_FUNC(ConstParent);
 
 
 void URI_FUNC(ResetUri)(URI_TYPE(Uri) * uri);
+
+int URI_FUNC(CompareRange)(
+		const URI_TYPE(TextRange) * a,
+		const URI_TYPE(TextRange) * b);
 
 UriBool URI_FUNC(RemoveDotSegmentsAbsolute)(URI_TYPE(Uri) * uri);
 UriBool URI_FUNC(RemoveDotSegments)(URI_TYPE(Uri) * uri, UriBool relative);

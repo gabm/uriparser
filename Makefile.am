@@ -34,7 +34,7 @@ pkginclude_HEADERS = \
 	include/uriparser/UriIp4.h
 
 
-liburiparser_la_LDFLAGS = -version-info 1:16:0
+liburiparser_la_LDFLAGS = -version-info 1:21:0
 if WIN32
 liburiparser_la_LDFLAGS += -no-undefined
 endif
@@ -70,6 +70,8 @@ test_uriparser_test_LDADD = liburiparser.la
 test_uriparser_test_SOURCES = \
 	test/FourSuite.cpp \
 	test/FourSuite.h \
+	test/VersionSuite.cpp \
+	test/VersionSuite.h \
 	test/test.cpp
 endif
 
@@ -81,10 +83,6 @@ EXTRA_DIST = \
 	doc/Makefile.in \
 	doc/preprocess.sh \
 	doc/release.sh.in \
-	doc/rfc1866.htm \
-	doc/rfc3513.htm \
-	doc/rfc3986.htm \
-	doc/rfc3986_grammar_only.txt \
 	doc/rule_dependencies.dot \
 	doc/rule_dependencies.sh \
 	\

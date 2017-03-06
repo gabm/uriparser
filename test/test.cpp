@@ -2,7 +2,7 @@
  * uriparser - RFC 3986 URI parsing library
  *
  * Copyright (C) 2007, Weijia Song <songweijia@gmail.com>
- * Copyright (C) 2007, Sebastian Pipping <webmaster@hartwork.org>
+ * Copyright (C) 2007, Sebastian Pipping <sebastian@pipping.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 #include <wchar.h>
 
 #include "FourSuite.h"
+#include "VersionSuite.h"
 
 using namespace Test;
 using namespace std;
@@ -35,6 +36,7 @@ using namespace std;
 extern "C" {
 UriBool uri_TESTING_ONLY_ParseIpSixA(const char * text);
 UriBool uri_TESTING_ONLY_ParseIpFourA(const char * text);
+int uriCompareRangeA(const UriTextRangeA * a, const UriTextRangeA * b);
 }
 
 
@@ -102,6 +104,8 @@ public:
 		TEST_ADD(UriSuite::testQueryDissection_Bug3590761)
 		TEST_ADD(UriSuite::testFreeCrash_Bug20080827)
 		TEST_ADD(UriSuite::testParseInvalid_Bug16)
+		TEST_ADD(UriSuite::testRangeComparison)
+		TEST_ADD(UriSuite::testEquals)
 	}
 
 private:
@@ -277,8 +281,11 @@ Rule                                | Example | hostSet | absPath | emptySeg
 		URI_TEST_IP_SIX_FAIL("0:0:0:0:0:0:0:");
 		URI_TEST_IP_SIX_FAIL("0:0:0:0:0:0:0:1.2.3.4");
 
-		// Nine quads
-		URI_TEST_IP_SIX_FAIL("0:0:0:0:0:0:0:0:0");
+		// Nine quads (or more)
+		URI_TEST_IP_SIX_FAIL("1:2:3:4:5:6:7:8:9");
+		URI_TEST_IP_SIX_FAIL("::2:3:4:5:6:7:8:9");
+		URI_TEST_IP_SIX_FAIL("1:2:3:4::6:7:8:9");
+		URI_TEST_IP_SIX_FAIL("1:2:3:4:5:6:7:8::");
 
 		// Invalid IPv4 part
 		URI_TEST_IP_SIX_FAIL("::ffff:001.02.03.004"); // Leading zeros
@@ -976,7 +983,7 @@ Rule                                | Example | hostSet | absPath | emptySeg
 		TEST_ASSERT(testUnescapingHelper(L"%0a%0d%0a%0d", L"\x0a\x0d\x0a\x0d", PLUS_DONT_TOUCH, URI_BR_DONT_TOUCH));
 	}
 
-	bool testAddBaseHelper(const wchar_t * base, const wchar_t * rel, const wchar_t * expectedResult) {
+	bool testAddBaseHelper(const wchar_t * base, const wchar_t * rel, const wchar_t * expectedResult, bool backward_compatibility = false) {
 		UriParserStateW stateW;
 
 		// Base
@@ -1011,7 +1018,12 @@ Rule                                | Example | hostSet | absPath | emptySeg
 
 		// Transform
 		UriUriW transformedUri;
-		res = uriAddBaseUriW(&transformedUri, &relUri, &baseUri);
+		if (backward_compatibility) {
+			res = uriAddBaseUriExW(&transformedUri, &relUri, &baseUri, URI_RESOLVE_IDENTICAL_SCHEME_COMPAT);
+		} else {
+			res = uriAddBaseUriW(&transformedUri, &relUri, &baseUri);
+		}
+
 		if (res != 0) {
 			uriFreeUriMembersW(&baseUri);
 			uriFreeUriMembersW(&relUri);
@@ -1100,6 +1112,12 @@ Rule                                | Example | hostSet | absPath | emptySeg
 		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"g#s/./x", L"http://a/b/c/g#s/./x"));
 		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"g#s/../x", L"http://a/b/c/g#s/../x"));
 		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"http:g", L"http:g"));
+
+		// Backward compatibility (feature request #4, RFC3986 5.4.2)
+		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"http:g", L"http:g", false));
+		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"http:g", L"http://a/b/c/g", true));
+		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"http:g?q#f", L"http://a/b/c/g?q#f", true));
+		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"other:g?q#f", L"other:g?q#f", true));
 
 		// Bug related to absolutePath flag set despite presence of host
 		TEST_ASSERT(testAddBaseHelper(L"http://a/b/c/d;p?q", L"/", L"http://a/"));
@@ -1533,6 +1551,8 @@ Rule                                | Example | hostSet | absPath | emptySeg
 
 		testFilenameUriConversionHelper(L"abc def", L"abc%20def", FOR_WINDOWS);
 		testFilenameUriConversionHelper(L"abc def", L"abc%20def", FOR_UNIX);
+
+		testFilenameUriConversionHelper(L"\\\\Server01\\user\\docs\\Letter.txt", L"file://Server01/user/docs/Letter.txt", FOR_WINDOWS);
 	}
 
 	void testCrash_FreeUriMembers_Bug20080116() {
@@ -1738,14 +1758,100 @@ Rule                                | Example | hostSet | absPath | emptySeg
 
 		uriFreeUriMembersA(&uriA);
 	}
-};
 
+	void testEqualsHelper(const char * uri_to_test) {
+		UriParserStateA state;
+		UriUriA uriOne;
+		UriUriA uriTwo;
+		state.uri = &uriOne;
+		TEST_ASSERT(URI_SUCCESS == uriParseUriA(&state, uri_to_test));
+		state.uri = &uriTwo;
+		TEST_ASSERT(URI_SUCCESS == uriParseUriA(&state, uri_to_test));
+		TEST_ASSERT(URI_TRUE == uriEqualsUriA(&uriOne, &uriTwo));
+		uriFreeUriMembersA(&uriOne);
+		uriFreeUriMembersA(&uriTwo);
+	}
+
+	void testEquals() {
+		testEqualsHelper("http://host");
+		testEqualsHelper("http://host:123");
+		testEqualsHelper("http://foo:bar@host:123");
+		testEqualsHelper("http://foo:bar@host:123/");
+		testEqualsHelper("http://foo:bar@host:123/path");
+		testEqualsHelper("http://foo:bar@host:123/path?query");
+		testEqualsHelper("http://foo:bar@host:123/path?query#fragment");
+
+		testEqualsHelper("path");
+		testEqualsHelper("/path");
+		testEqualsHelper("/path/");
+		testEqualsHelper("//path/");
+		testEqualsHelper("//host");
+		testEqualsHelper("//host:123");
+	}
+
+	void testCompareRangeHelper(const char * a, const char * b, int expected, bool avoidNullRange = true) {
+		UriTextRangeA ra;
+		UriTextRangeA rb;
+
+		if (a) {
+			ra.first = a;
+			ra.afterLast = a + strlen(a);
+		} else {
+			ra.first = NULL;
+			ra.afterLast = NULL;
+		}
+
+		if (b) {
+			rb.first = b;
+			rb.afterLast = b + strlen(b);
+		} else {
+			rb.first = NULL;
+			rb.afterLast = NULL;
+		}
+
+		const int received = uriCompareRangeA(
+				((a == NULL) && avoidNullRange) ? NULL : &ra,
+				((b == NULL) && avoidNullRange) ? NULL : &rb);
+		if (received != expected) {
+			printf("Comparing <%s> to <%s> yields %d, expected %d.\n",
+					a, b, received, expected);
+		}
+		TEST_ASSERT(received == expected);
+	}
+
+	void testRangeComparison() {
+		testCompareRangeHelper("", "", 0);
+		testCompareRangeHelper("a", "", 1);
+		testCompareRangeHelper("", "a", -1);
+
+		testCompareRangeHelper("a", "a", 0);
+		testCompareRangeHelper("a", "b", -1);
+		testCompareRangeHelper("b", "a", 1);
+
+		testCompareRangeHelper("a", "aa", -1);
+		testCompareRangeHelper("aa", "a", 1);
+
+		// Fixed with 0.8.1:
+		testCompareRangeHelper(NULL, "a", -1);
+		testCompareRangeHelper("a", NULL, 1);
+		testCompareRangeHelper(NULL, NULL, 0);
+
+		// Fixed with 0.8.3
+		const bool KEEP_NULL_RANGE = false;
+		const bool AVOID_NULL_RANGE = true;
+		testCompareRangeHelper(NULL, "", -1, AVOID_NULL_RANGE);
+		testCompareRangeHelper(NULL, "", -1, KEEP_NULL_RANGE);
+		testCompareRangeHelper("", NULL, 1, AVOID_NULL_RANGE);
+		testCompareRangeHelper("", NULL, 1, KEEP_NULL_RANGE);
+	}
+};
 
 
 int main() {
 	Suite suite;
 	suite.add(auto_ptr<Suite>(new UriSuite()));
 	suite.add(auto_ptr<Suite>(new FourSuite()));
+	suite.add(auto_ptr<Suite>(new VersionSuite()));
 	TextOutput output(TextOutput::Verbose);
 	return suite.run(output, false) ? 0 : 1;
 }
