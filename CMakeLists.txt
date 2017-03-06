@@ -62,10 +62,10 @@ ELSEIF (WIN32)
 
 	CONFIGURE_FILE (src/uriparser.def.in src/uriparser.def)
 	SET (uriparser_DEF src/uriparser.def)
-	INCLUDE_DIRECTORIES (include)
 ENDIF (UNIX)
 
 ADD_LIBRARY (uriparser SHARED ${uriparser_Source_Files} ${uriparser_DEF})
+target_include_directories(uriparser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 IF (UNIX)
 	SET_TARGET_PROPERTIES (uriparser PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_BINARY_DIR}/src/uriparser.sym")
